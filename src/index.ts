@@ -42,11 +42,31 @@ const getAccounts = async () => {
   return accounts;
 };
 
-const subscribeAccountsChange = (handler: AccountChangeHandler) => {
-  window.addEventListener("keplr_keystorechange", async () => {
+const getAccountBalance = async (address: string) => {
+  const response = await fetch(
+    `https://api.astra.bar/bank/balances/${address}`
+  );
+  const balance = response.json().then(({ result }) => result[0].amount);
+  return balance;
+};
+
+let accountsChangeEventHandler: any = null;
+
+const subscribeAccountsChangeEvent = (handler: AccountChangeHandler) => {
+  accountsChangeEventHandler = async () => {
     const accounts = await getAccounts();
     handler(accounts);
-  });
+  };
+  window.addEventListener("keplr_keystorechange", accountsChangeEventHandler);
+};
+
+const unsubscribeAccountsChangeEvent = () => {
+  if (accountsChangeEventHandler) {
+    window.removeEventListener(
+      "keplr_keystorechange",
+      accountsChangeEventHandler
+    );
+  }
 };
 
 const sendTx = async ({
@@ -92,4 +112,10 @@ const sendTx = async ({
   return result;
 };
 
-export { getAccounts, sendTx, subscribeAccountsChange };
+export {
+  getAccounts,
+  getAccountBalance,
+  sendTx,
+  subscribeAccountsChangeEvent,
+  unsubscribeAccountsChangeEvent,
+};
